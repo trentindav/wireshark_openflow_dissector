@@ -1,0 +1,137 @@
+M = {}
+
+M["ofp_versions"] = {
+    [4] = "OF1.3",
+    [5] = "OF1.4",
+    [6] = "OF1.5",
+}
+
+M["ofp_type"] = {
+    [0] = "OFPT_HELLO", [1] = "OFPT_ERROR", [2] = "OFPT_ECHO_REQUEST", [3] = "OFPT_ECHO_REPLY",
+    [4] = "OFPT_EXPERIMENTER", [5] = "OFPT_FEATURES_REQUEST", [6] = "OFPT_FEATURES_REPLY", [7] = "OFPT_GET_CONFIG_REQUEST",
+    [8] = "OFPT_GET_CONFIG_REPLY", [9] = "OFPT_SET_CONFIG", [10] = "OFPT_PACKET_IN", [11] = "OFPT_FLOW_REMOVED",
+    [12] = "OFPT_PORT_STATUS", [13] = "OFPT_PACKET_OUT", [14] = "OFPT_FLOW_MOD", [15] = "OFPT_GROUP_MOD",
+    [16] = "OFPT_PORT_MOD", [17] = "OFPT_TABLE_MOD", [18] = "OFPT_MULTIPART_REQUEST", [19] = "OFPT_MULTIPART_REPLY",
+    [20] = "OFPT_BARRIER_REQUEST", [21] = "OFPT_BARRIER_REPLY", [22] = "deprecated (22)", [23] = "deprecated (23)",
+    [24] = "OFPT_ROLE_REQUEST", [25] = "OFPT_ROLE_REPLY", [26] = "OFPT_GET_ASYNC_REQUEST", [27] = "OFPT_GET_ASYNC_REPLY",
+    [28] = "OFPT_SET_ASYNC", [29] = "OFPT_METER_MOD", [30] = "OFPT_ROLE_STATUS", [31] = "OFPT_TABLE_STATUS",
+    [32] = "OFPT_REQUESTFORWARD", [33] = "OFPT_BUNDLE_CONTROL", [34] = "OFPT_BUNDLE_ADD_MESSAGE", [35] = "OFPT_CONTROLLER_STATUS",
+}
+
+M["ofp_hello_elem_type"] = {
+    [1] = "OFPHET_VERSIONBITMAP"
+}
+
+M["ofp_multipart_type"] = {
+    [0] = "OFPST_DESC",
+    [1] = "OFPST_FLOW_DESC",
+    [2] = "OFPST_AGGREGATE_STATS",
+    [3] = "OFPST_TABLE_STATS",
+    [4] = "OFPST_PORT_STATS",
+    [5] = "OFPST_QUEUE_STATS",
+    [6] = "OFPST_GROUP_STATS",
+    [7] = "OFPST_GROUP_DESC",
+    [8] = "OFPST_GROUP_FEATURES",
+    [9] = "OFPST_METER_STATS",
+    [10] = "OFPST_METER_DESC",
+    [11] = "OFPST_METER_FEATURES",
+    [12] = "OFPST_TABLE_FEATURES",
+    [13] = "OFPST_PORT_DESC",
+    [14] = "OFPMP_TABLE_DESC",
+    [15] = "OFPMP_QUEUE_DESC",
+    [16] = "OFPMP_FLOW_MONITOR",
+    [17] = "OFPMP_FLOW_STATS",
+    [18] = "OFPMP_CONTROLLER_STATUS",
+    [19] = "OFPMP_BUNDLE_FEATURES",
+    [65535] = "OFPST_EXPERIMENTER",
+}
+
+M["ofp_flow_stats_reason"] = {
+    [0] = "OFPFSR_STATS_REQUEST",
+    [1] = "OFPFSR_STAT_TRIGGER",
+}
+
+M.ofp_match_type = {
+    [0] = "OFPMT_STANDARD",
+    [1] = "OFPMT_OXM"
+}
+
+M.ofp_oxm_class = {
+    [0x0000] = "OFPXMC_NXM_0",
+    [0x0001] = "OFPXMC_NXM_1",
+    [0x8000] = "OFPXMC_OPENFLOW_BASIC",
+    [0x8001] = "OFPXMC_PACKETS_REGS",
+    [0xffff] = "OFPXMC_EXPERIMENTER",
+}
+
+M.oxm_ofb_match_fields = {
+    [0] = "OFPXMT_OFB_IN_PORT",
+    [1] = "OFPXMT_OFB_IN_PHY_PORT",
+    [2] = "OFPXMT_OFB_METADATA",
+    [3] = "OFPXMT_OFB_ETH_DST",
+    [4] = "OFPXMT_OFB_ETH_SRC",
+    [5] = "OFPXMT_OFB_ETH_TYPE",
+    [6] = "OFPXMT_OFB_VLAN_VID",
+    [7] = "OFPXMT_OFB_VLAN_PCP",
+    [8] = "OFPXMT_OFB_IP_DSCP",
+    [9] = "OFPXMT_OFB_IP_ECN",
+    [10] = "OFPXMT_OFB_IP_PROTO",
+    [11] = "OFPXMT_OFB_IPV4_SRC",
+    [12] = "OFPXMT_OFB_IPV4_DST",
+    [13] = "OFPXMT_OFB_TCP_SRC",
+    [14] = "OFPXMT_OFB_TCP_DST",
+    [15] = "OFPXMT_OFB_UDP_SRC",
+    [16] = "OFPXMT_OFB_UDP_DST",
+    [17] = "OFPXMT_OFB_SCTP_SRC",
+    [18] = "OFPXMT_OFB_SCTP_DST",
+    [19] = "OFPXMT_OFB_ICMPV4_TYPE",
+    [20] = "OFPXMT_OFB_ICMPV4_CODE",
+    [21] = "OFPXMT_OFB_ARP_OP",
+    [22] = "OFPXMT_OFB_ARP_SPA",
+    [23] = "OFPXMT_OFB_ARP_TPA",
+    [24] = "OFPXMT_OFB_ARP_SHA",
+    [25] = "OFPXMT_OFB_ARP_THA",
+    [26] = "OFPXMT_OFB_IPV6_SRC",
+    [27] = "OFPXMT_OFB_IPV6_DST",
+    [28] = "OFPXMT_OFB_IPV6_FLABEL",
+    [29] = "OFPXMT_OFB_ICMPV6_TYPE",
+    [30] = "OFPXMT_OFB_ICMPV6_CODE",
+    [31] = "OFPXMT_OFB_IPV6_ND_TARGET",
+    [32] = "OFPXMT_OFB_IPV6_ND_SLL",
+    [33] = "OFPXMT_OFB_IPV6_ND_TLL",
+    [34] = "OFPXMT_OFB_MPLS_LABEL",
+    [35] = "OFPXMT_OFB_MPLS_TC",
+    [36] = "OFPXMT_OFB_MPLS_BOS",
+    [37] = "OFPXMT_OFB_PBB_ISID",
+    [38] = "OFPXMT_OFB_TUNNEL_ID",
+    [39] = "OFPXMT_OFB_IPV6_EXTHDR",
+    [41] = "OFPXMT_OFB_PBB_UCA",
+    [42] = "OFPXMT_OFB_TCP_FLAGS",
+    [43] = "OFPXMT_OFB_ACTSET_OUTPUT",
+    [44] = "OFPXMT_OFB_PACKET_TYPE",
+}
+
+M.ofp_oxs_class = {
+    [0x8002] = "OFPXSC_OPENFLOW_BASIC",
+    [0xffff] = "OFPXSC_EXPERIMENTER"
+}
+
+M.OFPXST_OFB_DURATION = 0
+M.OFPXST_OFB_IDLE_TIME = 1
+M.OFPXST_OFB_FLOW_COUNT = 3
+M.OFPXST_OFB_PACKET_COUNT = 4
+M.OFPXST_OFB_BYTE_COUNT = 5
+M.oxs_ofb_stat_fields = {
+    [M.OFPXST_OFB_DURATION] = "OFPXST_OFB_DURATION",
+    [M.OFPXST_OFB_IDLE_TIME] = "OFPXST_OFB_IDLE_TIME",
+    [M.OFPXST_OFB_FLOW_COUNT] = "OFPXST_OFB_FLOW_COUNT",
+    [M.OFPXST_OFB_PACKET_COUNT] = "OFPXST_OFB_PACKET_COUNT",
+    [M.OFPXST_OFB_BYTE_COUNT] = "OFPXST_OFB_BYTE_COUNT",
+}
+
+function roundup(orig_len)
+    return math.floor((orig_len+7)/8)*8
+end
+M.roundup = roundup
+
+return M
