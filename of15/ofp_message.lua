@@ -1,5 +1,6 @@
 -- local d = require "debug"
 local ofp = require "ofp_const"
+local ofp_struct = require "of15.ofp_struct"
 local struct_multipart = require "of15.ofp_struct_multipart"
 local M = {}
 
@@ -111,8 +112,34 @@ function ofp_flow_mod(tvb, pinfo, tree)
 end
 M.parsers_ofpt[14] = ofp_flow_mod
 
+-- Group Mod
 fields.group_mod = ProtoField.new("Group Mod", "of15.group_mod", ftypes.STRING)
+fields.group_mod_command = ProtoField.new("Command", "of15.group_mod.command", ftypes.UINT16, ofp.ofp_group_mod_command, base.DEC)
+fields.group_mod_type = ProtoField.new("Type", "of15.group_mod.type", ftypes.UINT8, ofp.ofp_group_type, base.DEC)
+fields.group_mod_group_id = ProtoField.new("Group Id", "of15.group_mod.group_id", ftypes.UINT32, nil, base.DEC)
+fields.group_mod_bucket_array_len = ProtoField.new("Bucket Array Len", "of15.group_mod.bucket_array_len", ftypes.UINT16, nil, base.DEC)
+fields.group_mod_command_bucket_id = ProtoField.new("Command Bucket Id", "of15.group_mod.command_bucket_id", ftypes.UINT32, nil, base.DEC)
 function ofp_group_mod(tvb, pinfo, tree)
+    local group_id = tvb(4,4):uint()
+    local subtree = tree:add(fields.multipart_request, tvb(), "", "Group Mod: Id="..tostring(group_id))
+    subtree:add(fields.group_mod_command, tvb(0,2))
+    subtree:add(fields.group_mod_type, tvb(2,1))
+    subtree:add(fields.pad, tvb(3,1))
+    subtree:add(fields.group_mod_group_id, tvb(4,4))
+    local bucket_array_len = tvb(8,2):uint()
+    subtree:add(fields.group_mod_bucket_array_len, tvb(8,2))
+    subtree:add(fields.pad2, tvb(10,2))
+    local command_bucket_id = tvb(12,4):uint()
+    if (ofp.ofp_group_bucket[command_bucket_id] ~= nil) then
+        subtree:add(fields.group_mod_command_bucket_id, tvb(12,4), command_bucket_id, "Command Bucket Id: "..ofp.ofp_group_bucket[command_bucket_id])
+    else
+        subtree:add(fields.group_mod_command_bucket_id, tvb(12,4))
+    end
+    local offset = 16
+    while (offset < 16+bucket_array_len) do
+        offset = offset + ofp_struct.ofp_bucket(tvb(offset), pinfo, subtree)
+    end
+    -- TODO: properties
 end
 M.parsers_ofpt[15] = ofp_group_mod
 
@@ -125,12 +152,12 @@ end
 M.parsers_ofpt[17] = ofp_table_mod
 
 -- Multipart
-fields.multipart_request = ProtoField.new("Multipart Request", "of.multipart_reply", ftypes.STRING)
-fields.multipart_reply = ProtoField.new("Multipart Reply", "of.multipart_reply", ftypes.STRING)
-fields.multipart_type = ProtoField.new("Type", "of.multipart.type", ftypes.UINT16, ofp.ofp_multipart_type, base.DEC)
-fields.multipart_flags = ProtoField.new("Flags", "of.multipart.flags", ftypes.UINT16, nil, base.HEX, 0x00000001)
-fields.multipart_flags_request_more = ProtoField.new("OFPMPF_REQUEST_MORE", "of.multipart.flags.request_more", ftypes.BOOLEAN, nil, 16, 0x00000001)
-fields.multipart_flags_reply_more = ProtoField.new("OFPMPF_REPLY_MORE", "of.multipart.flags.reply_more", ftypes.BOOLEAN, nil, 16, 0x00000001)
+fields.multipart_request = ProtoField.new("Multipart Request", "of15.multipart_reply", ftypes.STRING)
+fields.multipart_reply = ProtoField.new("Multipart Reply", "of15.multipart_reply", ftypes.STRING)
+fields.multipart_type = ProtoField.new("Type", "of15.multipart.type", ftypes.UINT16, ofp.ofp_multipart_type, base.DEC)
+fields.multipart_flags = ProtoField.new("Flags", "of15.multipart.flags", ftypes.UINT16, nil, base.HEX, 0x00000001)
+fields.multipart_flags_request_more = ProtoField.new("OFPMPF_REQUEST_MORE", "of15.multipart.flags.request_more", ftypes.BOOLEAN, nil, 16, 0x00000001)
+fields.multipart_flags_reply_more = ProtoField.new("OFPMPF_REPLY_MORE", "of15.multipart.flags.reply_more", ftypes.BOOLEAN, nil, 16, 0x00000001)
 
 function ofp_multipart_request(tvb, pinfo, tree)
     assert(tvb:len() >= 8, "At least 8 Bytes required")

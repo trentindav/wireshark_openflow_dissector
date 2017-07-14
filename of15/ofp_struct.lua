@@ -137,8 +137,8 @@ function ofp_bucket(tvb, pinfo, tree)
     local action_array_len = tvb(2,2):uint()
     subtree:add(fields.ofp_bucket_action_array_len, tvb(2,2))
     subtree:add(fields.ofp_bucket_bucket_id, tvb(4,4))
-    local offset = 16
-    while (offset < action_array_len+16) do
+    local offset = 8
+    while (offset < action_array_len+8) do
         offset = offset + ofp_action_header(tvb(offset), pinfo, subtree)
     end
     -- TODO: Properties ofp_group_buck_prop_header
@@ -153,13 +153,21 @@ fields.ofp_action_header_len = ProtoField.new("Length", "of.ofp_bucket.len", fty
 function ofp_action_header(tvb, pinfo, tree)
     local len = tvb(2,2):uint()
     local act_type_int = tvb(0,2):uint()
-    local subtree = tree:add(fields.ofp_action_header, tvb(0, len), "", 
-        string.gsub(string.lower(ofp.ofp_action_type[act_type_int]), "ofpat_", ""), "")
+    local subtree
+    if ofp.ofp_action_type[act_type_int] ~= nil then
+        subtree = tree:add(fields.ofp_action_header, tvb(0, len), "", 
+            string.gsub(string.lower(ofp.ofp_action_type[act_type_int]), "ofpat_", ""), "")
+    else
+        subtree = tree:add(fields.ofp_action_header, tvb(0, len), "", "Action")
+    end
     subtree:add(fields.ofp_action_header_type, tvb(0,2))
     subtree:add(fields.ofp_action_header_len, tvb(2,2))
     -- TODO: Values for different actions
+    assert(len > 0, "Invalid action len=0")
     return len
 end
 M.ofp_action_header = ofp_action_header
+
+
 
 return M

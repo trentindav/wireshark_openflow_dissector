@@ -1,6 +1,4 @@
 -- local d = require "debug"
-local pathOfThisFile = "/home/davide/Development/Lua/wireshark_openflow_dissector"
-print(pathOfThisFile)
 local ofp = require "ofp_const"
 
 -- for k, v in pairs(Dissector.list()) do
