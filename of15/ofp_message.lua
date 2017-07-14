@@ -1,6 +1,6 @@
 -- local d = require "debug"
 local ofp = require "ofp_const"
-local struct_multipart = require "ofp_struct_multipart"
+local struct_multipart = require "of15.ofp_struct_multipart"
 local M = {}
 
 fields = _G.of_proto.fields
@@ -19,7 +19,7 @@ fields.hello_elem_bitmap_of12 = ProtoField.new("OF1.2", "of15.hello.element.bitm
 fields.hello_elem_bitmap_of13 = ProtoField.new("OF1.3", "of15.hello.element.bitmap.of13", ftypes.BOOLEAN, nil, 32, 0x00000010)
 fields.hello_elem_bitmap_of14 = ProtoField.new("OF1.4", "of15.hello.element.bitmap.of14", ftypes.BOOLEAN, nil, 32, 0x00000020)
 fields.hello_elem_bitmap_of15 = ProtoField.new("OF1.5", "of15.hello.element.bitmap.of15", ftypes.BOOLEAN, nil, 32, 0x00000040)
-function parse_hello(tvb, pinfo, tree)
+function ofp_hello(tvb, pinfo, tree)
     if (tvb:len() == 0) then return end
     local subtree = tree:add(fields.hello, tvb(), "", "Hello")
     assert(tvb:len() >= 4, "If Hello has body, it must have at least 4 bytes")
@@ -48,80 +48,81 @@ function parse_hello(tvb, pinfo, tree)
         offset = offset + elem_len
     end
 end
-M.parsers_ofpt[0] = parse_hello
+M.parsers_ofpt[0] = ofp_hello
 
-function parse_error(tvb, pinfo, tree)
+function ofp_error(tvb, pinfo, tree)
 end
-M.parsers_ofpt[1] = parse_error
+M.parsers_ofpt[1] = ofp_error
 
 fields.echo_data = ProtoField.new("Echo Data", "of15.echo.data", ftypes.STRING)
-function parse_echo_request(tvb, pinfo, tree)
+function ofp_echo_request(tvb, pinfo, tree)
     if (tvb:len() == 0) then return end
     tree:add(fields.echo_data, tvb())
 end
-M.parsers_ofpt[2] = parse_echo_request
+M.parsers_ofpt[2] = ofp_echo_request
 
-function parse_echo_reply(tvb, pinfo, tree)
+function ofp_echo_reply(tvb, pinfo, tree)
     if (tvb:len() == 0) then return end
     tree:add(fields.echo_data, tvb())
 end
-M.parsers_ofpt[3] = parse_echo_reply
+M.parsers_ofpt[3] = ofp_echo_reply
 
-function parse_experimenter(tvb, pinfo, tree)
+function ofp_experimenter(tvb, pinfo, tree)
 end
-M.parsers_ofpt[4] = parse_experimenter
+M.parsers_ofpt[4] = ofp_experimenter
 
-function parse_features_request(tvb, pinfo, tree)
+function ofp_features_request(tvb, pinfo, tree)
 end
-M.parsers_ofpt[5] = parse_features_request
+M.parsers_ofpt[5] = ofp_features_request
 
-function parse_features_reply(tvb, pinfo, tree)
+function ofp_features_reply(tvb, pinfo, tree)
 end
-M.parsers_ofpt[6] = parse_features_reply
+M.parsers_ofpt[6] = ofp_features_reply
 
-function parse_get_config_request(tvb, pinfo, tree)
+function ofp_get_config_request(tvb, pinfo, tree)
 end
-M.parsers_ofpt[7] = parse_get_config_request
+M.parsers_ofpt[7] = ofp_get_config_request
 
-function parse_get_config_reply(tvb, pinfo, tree)
+function ofp_get_config_reply(tvb, pinfo, tree)
 end
-M.parsers_ofpt[8] = parse_get_config_reply
+M.parsers_ofpt[8] = ofp_get_config_reply
 
-function parse_set_config(tvb, pinfo, tree)
+function ofp_set_config(tvb, pinfo, tree)
 end
-M.parsers_ofpt[9] = parse_set_config
+M.parsers_ofpt[9] = ofp_set_config
 
-function parse_packet_in(tvb, pinfo, tree)
+function ofp_packet_in(tvb, pinfo, tree)
 end
-M.parsers_ofpt[10] = parse_packet_in
+M.parsers_ofpt[10] = ofp_packet_in
 
-function parse_flow_removed(tvb, pinfo, tree)
+function ofp_flow_removed(tvb, pinfo, tree)
 end
-M.parsers_ofpt[11] = parse_flow_removed
+M.parsers_ofpt[11] = ofp_flow_removed
 
-function parse_port_status(tvb, pinfo, tree)
+function ofp_port_status(tvb, pinfo, tree)
 end
-M.parsers_ofpt[12] = parse_port_status
+M.parsers_ofpt[12] = ofp_port_status
 
-function parse_packet_out(tvb, pinfo, tree)
+function ofp_packet_out(tvb, pinfo, tree)
 end
-M.parsers_ofpt[13] = parse_packet_out
+M.parsers_ofpt[13] = ofp_packet_out
 
-function parse_flow_mod(tvb, pinfo, tree)
+function ofp_flow_mod(tvb, pinfo, tree)
 end
-M.parsers_ofpt[14] = parse_flow_mod
+M.parsers_ofpt[14] = ofp_flow_mod
 
-function parse_group_mod(tvb, pinfo, tree)
+fields.group_mod = ProtoField.new("Group Mod", "of15.group_mod", ftypes.STRING)
+function ofp_group_mod(tvb, pinfo, tree)
 end
-M.parsers_ofpt[15] = parse_group_mod
+M.parsers_ofpt[15] = ofp_group_mod
 
-function parse_port_mod(tvb, pinfo, tree)
+function ofp_port_mod(tvb, pinfo, tree)
 end
-M.parsers_ofpt[16] = parse_port_mod
+M.parsers_ofpt[16] = ofp_port_mod
 
-function parse_table_mod(tvb, pinfo, tree)
+function ofp_table_mod(tvb, pinfo, tree)
 end
-M.parsers_ofpt[17] = parse_table_mod
+M.parsers_ofpt[17] = ofp_table_mod
 
 -- Multipart
 fields.multipart_request = ProtoField.new("Multipart Request", "of.multipart_reply", ftypes.STRING)
@@ -131,7 +132,7 @@ fields.multipart_flags = ProtoField.new("Flags", "of.multipart.flags", ftypes.UI
 fields.multipart_flags_request_more = ProtoField.new("OFPMPF_REQUEST_MORE", "of.multipart.flags.request_more", ftypes.BOOLEAN, nil, 16, 0x00000001)
 fields.multipart_flags_reply_more = ProtoField.new("OFPMPF_REPLY_MORE", "of.multipart.flags.reply_more", ftypes.BOOLEAN, nil, 16, 0x00000001)
 
-function parse_multipart_request(tvb, pinfo, tree)
+function ofp_multipart_request(tvb, pinfo, tree)
     assert(tvb:len() >= 8, "At least 8 Bytes required")
     local subtree = tree:add(fields.multipart_request, tvb(), "", "Multipart Request: "..ofp.ofp_multipart_type[tvb(0,2):uint()])
     pinfo.cols.info:append(": "..ofp.ofp_multipart_type[tvb(0,2):uint()])
@@ -146,9 +147,9 @@ function parse_multipart_request(tvb, pinfo, tree)
         pinfo.cols.info:append(" not implemented")
     end
 end
-M.parsers_ofpt[18] = parse_multipart_request
+M.parsers_ofpt[18] = ofp_multipart_request
 
-function parse_multipart_reply(tvb, pinfo, tree)
+function ofp_multipart_reply(tvb, pinfo, tree)
     assert(tvb:len() >= 8, "At least 8 Bytes required")
     local subtree = tree:add(fields.multipart_reply, tvb(), "", "Multipart Reply: "..ofp.ofp_multipart_type[tvb(0,2):uint()])
     pinfo.cols.info:append(": "..ofp.ofp_multipart_type[tvb(0,2):uint()])
@@ -165,62 +166,62 @@ function parse_multipart_reply(tvb, pinfo, tree)
         end
     end
 end
-M.parsers_ofpt[19] = parse_multipart_reply
+M.parsers_ofpt[19] = ofp_multipart_reply
 
-function parse_barrier_request(tvb, pinfo, tree)
+function ofp_barrier_request(tvb, pinfo, tree)
 end
-M.parsers_ofpt[20] = parse_barrier_request
+M.parsers_ofpt[20] = ofp_barrier_request
 
-function parse_barrier_reply(tvb, pinfo, tree)
+function ofp_barrier_reply(tvb, pinfo, tree)
 end
-M.parsers_ofpt[21] = parse_barrier_reply
+M.parsers_ofpt[21] = ofp_barrier_reply
 
-function parse_role_request(tvb, pinfo, tree)
+function ofp_role_request(tvb, pinfo, tree)
 end
-M.parsers_ofpt[24] = parse_role_request
+M.parsers_ofpt[24] = ofp_role_request
 
-function parse_role_reply(tvb, pinfo, tree)
+function ofp_role_reply(tvb, pinfo, tree)
 end
-M.parsers_ofpt[25] = parse_role_reply
+M.parsers_ofpt[25] = ofp_role_reply
 
-function parse_get_async_request(tvb, pinfo, tree)
+function ofp_get_async_request(tvb, pinfo, tree)
 end
-M.parsers_ofpt[26] = parse_get_async_request
+M.parsers_ofpt[26] = ofp_get_async_request
 
-function parse_get_async_reply(tvb, pinfo, tree)
+function ofp_get_async_reply(tvb, pinfo, tree)
 end
-M.parsers_ofpt[27] = parse_get_async_reply
+M.parsers_ofpt[27] = ofp_get_async_reply
 
-function parse_set_async(tvb, pinfo, tree)
+function ofp_set_async(tvb, pinfo, tree)
 end
-M.parsers_ofpt[28] = parse_set_async
+M.parsers_ofpt[28] = ofp_set_async
 
-function parse_meter_mod(tvb, pinfo, tree)
+function ofp_meter_mod(tvb, pinfo, tree)
 end
-M.parsers_ofpt[29] = parse_meter_mod
+M.parsers_ofpt[29] = ofp_meter_mod
 
-function parse_role_status(tvb, pinfo, tree)
+function ofp_role_status(tvb, pinfo, tree)
 end
-M.parsers_ofpt[30] = parse_role_status
+M.parsers_ofpt[30] = ofp_role_status
 
-function parse_table_status(tvb, pinfo, tree)
+function ofp_table_status(tvb, pinfo, tree)
 end
-M.parsers_ofpt[31] = parse_table_status
+M.parsers_ofpt[31] = ofp_table_status
 
-function parse_requestforward(tvb, pinfo, tree)
+function ofp_requestforward(tvb, pinfo, tree)
 end
-M.parsers_ofpt[32] = parse_requestforward
+M.parsers_ofpt[32] = ofp_requestforward
 
-function parse_bundle_control(tvb, pinfo, tree)
+function ofp_bundle_control(tvb, pinfo, tree)
 end
-M.parsers_ofpt[33] = parse_bundle_control
+M.parsers_ofpt[33] = ofp_bundle_control
 
-function parse_bundle_add_message(tvb, pinfo, tree)
+function ofp_bundle_add_message(tvb, pinfo, tree)
 end
-M.parsers_ofpt[34] = parse_bundle_add_message
+M.parsers_ofpt[34] = ofp_bundle_add_message
 
-function parse_controller_status(tvb, pinfo, tree)
+function ofp_controller_status(tvb, pinfo, tree)
 end
-M.parsers_ofpt[35] = parse_controller_status
+M.parsers_ofpt[35] = ofp_controller_status
 
 return M

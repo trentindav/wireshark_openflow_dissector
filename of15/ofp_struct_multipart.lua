@@ -1,5 +1,5 @@
 local ofp = require "ofp_const"
-local ofp_struct = require "ofp_struct"
+local ofp_struct = require "of15.ofp_struct"
 
 M = {}
 

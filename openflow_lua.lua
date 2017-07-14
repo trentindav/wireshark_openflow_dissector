@@ -1,17 +1,19 @@
 -- local d = require "debug"
+local pathOfThisFile = "/home/davide/Development/Lua/wireshark_openflow_dissector"
+print(pathOfThisFile)
 local ofp = require "ofp_const"
 
 -- for k, v in pairs(Dissector.list()) do
 --   print(k, v)
 -- end
 local builtin_of_dissector = Dissector.get("openflow")
-local of_proto = Proto("openflow_lua","OpenFlow (LUA)")
+local of_proto = Proto("openflow_lua","OpenFlow (LUA)", "openflow_lua")
 local of = of_proto.fields
 
 _G.of_proto = of_proto
 
 -- OF versions
-local of15 = require "openflow_15"
+local of15 = require "of15.ofp_message"
 
 local parsers_version = {
     [6] = of15
