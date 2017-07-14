@@ -17,6 +17,10 @@ local parsers_version = {
     [6] = of15
 }
 
+local openflow_pinfo = {
+    [6] = "OpenFlow 1.5"
+}
+
 
 -- Header
 of.header = ProtoField.new("OF Header", "of.header", ftypes.STRING)
@@ -37,7 +41,6 @@ function of_proto.dissector(tvb, pinfo, tree)
     if (i_version < 6) then
         builtin_of_dissector:call(tvb, pinfo, tree)
     else
-        pinfo.cols.protocol = "OpenFlow"
         local subtree = tree:add(of_proto, tvb(), "OpenFlow")
         local header = subtree:add(of.header, tvb(), "", "OF Header")
 
@@ -45,12 +48,13 @@ function of_proto.dissector(tvb, pinfo, tree)
         local i_type = tvb(1,1):uint()
         local i_length = tvb(2,2):uint()
         local i_xid = tvb(4,4):uint()
-        pinfo.cols.info = "Type "..ofp.ofp_type[i_type]
+        pinfo.cols.info = ofp.ofp_type[i_type]
+        pinfo.cols.protocol = openflow_pinfo[i_version]
         header:add(of.header_version, tvb(0,1))
         header:add(of.header_type, tvb(1,1))
         header:add(of.header_length, tvb(2,2))
         header:add(of.header_xid, tvb(4,4))
-        if (tvb:len() > 8) then
+        if (tvb:len() > 0) then
             parsers_version[i_version].parsers_ofpt[i_type](tvb:range(8, tvb(2,2):uint()-8), pinfo, subtree)
         end
     end
@@ -58,4 +62,5 @@ end
 
 local wtap_diss = DissectorTable.get("tcp.port")
 wtap_diss:add(6633, of_proto)
+wtap_diss:add(6653, of_proto)
 

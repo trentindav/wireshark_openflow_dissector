@@ -63,6 +63,7 @@ function ofp_stats(tvb, pinfo, tree)
     subtree:add(fields.length, tvb(2,2))
     offset = 4
     local unpadded_len = tvb(2,2):uint()
+    assert(unpadded_len >= 8, "ofp_stats.length must be at least 8 bytes")
     while (offset < unpadded_len) do
         offset = offset + oxs_field(tvb(offset), pinfo, subtree)
     end
@@ -124,5 +125,41 @@ end
 oxs_field_value_parsers[ofp.OFPXST_OFB_PACKET_COUNT] = oxs_field_value_64bit
 oxs_field_value_parsers[ofp.OFPXST_OFB_BYTE_COUNT] = oxs_field_value_64bit
 
+
+fields.ofp_bucket = ProtoField.new("Bucket", "of.ofp_bucket", ftypes.STRING)
+fields.ofp_bucket_len = ProtoField.new("Length", "of.ofp_bucket.len", ftypes.UINT16, nil, base.DEC)
+fields.ofp_bucket_action_array_len = ProtoField.new("Action Array Length", "of.ofp_bucket.action_array_len", ftypes.UINT16, nil, base.DEC)
+fields.ofp_bucket_bucket_id = ProtoField.new("Bucket Id", "of.ofp_bucket.bucket_id", ftypes.UINT32, nil, base.DEC)
+function ofp_bucket(tvb, pinfo, tree)
+    local len = tvb(0,2):uint()
+    local subtree = tree:add(fields.ofp_bucket, tvb(0, len), "", "Bucket")
+    subtree:add(fields.ofp_bucket_len, tvb(0,2))
+    local action_array_len = tvb(2,2):uint()
+    subtree:add(fields.ofp_bucket_action_array_len, tvb(2,2))
+    subtree:add(fields.ofp_bucket_bucket_id, tvb(4,4))
+    local offset = 16
+    while (offset < action_array_len+16) do
+        offset = offset + ofp_action_header(tvb(offset), pinfo, subtree)
+    end
+    -- TODO: Properties ofp_group_buck_prop_header
+    return len
+end
+M.ofp_bucket = ofp_bucket
+
+
+fields.ofp_action_header = ProtoField.new("Action", "of.ofp_action_header", ftypes.STRING)
+fields.ofp_action_header_type = ProtoField.new("Type", "of.ofp_bucket.type", ftypes.UINT16, ofp.ofp_action_tyoe, base.DEC)
+fields.ofp_action_header_len = ProtoField.new("Length", "of.ofp_bucket.len", ftypes.UINT16, nil, base.DEC)
+function ofp_action_header(tvb, pinfo, tree)
+    local len = tvb(2,2):uint()
+    local act_type_int = tvb(0,2):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(0, len), "", 
+        string.gsub(string.lower(ofp.ofp_action_type[act_type_int]), "ofpat_", ""), "")
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    -- TODO: Values for different actions
+    return len
+end
+M.ofp_action_header = ofp_action_header
 
 return M

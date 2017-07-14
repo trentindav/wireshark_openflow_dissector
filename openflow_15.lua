@@ -20,6 +20,7 @@ fields.hello_elem_bitmap_of13 = ProtoField.new("OF1.3", "of15.hello.element.bitm
 fields.hello_elem_bitmap_of14 = ProtoField.new("OF1.4", "of15.hello.element.bitmap.of14", ftypes.BOOLEAN, nil, 32, 0x00000020)
 fields.hello_elem_bitmap_of15 = ProtoField.new("OF1.5", "of15.hello.element.bitmap.of15", ftypes.BOOLEAN, nil, 32, 0x00000040)
 function parse_hello(tvb, pinfo, tree)
+    if (tvb:len() == 0) then return end
     local subtree = tree:add(fields.hello, tvb(), "", "Hello")
     assert(tvb:len() >= 4, "If Hello has body, it must have at least 4 bytes")
     offset = 0
@@ -53,11 +54,16 @@ function parse_error(tvb, pinfo, tree)
 end
 M.parsers_ofpt[1] = parse_error
 
+fields.echo_data = ProtoField.new("Echo Data", "of15.echo.data", ftypes.STRING)
 function parse_echo_request(tvb, pinfo, tree)
+    if (tvb:len() == 0) then return end
+    tree:add(fields.echo_data, tvb())
 end
 M.parsers_ofpt[2] = parse_echo_request
 
 function parse_echo_reply(tvb, pinfo, tree)
+    if (tvb:len() == 0) then return end
+    tree:add(fields.echo_data, tvb())
 end
 M.parsers_ofpt[3] = parse_echo_reply
 
@@ -129,11 +135,16 @@ function parse_multipart_request(tvb, pinfo, tree)
     assert(tvb:len() >= 8, "At least 8 Bytes required")
     local subtree = tree:add(fields.multipart_request, tvb(), "", "Multipart Request: "..ofp.ofp_multipart_type[tvb(0,2):uint()])
     pinfo.cols.info:append(": "..ofp.ofp_multipart_type[tvb(0,2):uint()])
+    local i_mult_type = tvb(0,2):uint()
     subtree:add(fields.multipart_type, tvb(0,2))
     subtree:add(fields.multipart_flags, tvb(2,2))
     subtree:add(fields.multipart_flags_request_more, tvb(2,2))
     subtree:add(fields.pad4, tvb(4,4))
-    struct_multipart.ofp_flow_stats_request(tvb(8), pinfo, subtree)
+    if (struct_multipart.parsers_ofpmp_request[i_mult_type] ~= nil) then
+        struct_multipart.parsers_ofpmp_request[i_mult_type](tvb(8), pinfo, subtree)
+    else
+        pinfo.cols.info:append(" not implemented")
+    end
 end
 M.parsers_ofpt[18] = parse_multipart_request
 
@@ -141,11 +152,18 @@ function parse_multipart_reply(tvb, pinfo, tree)
     assert(tvb:len() >= 8, "At least 8 Bytes required")
     local subtree = tree:add(fields.multipart_reply, tvb(), "", "Multipart Reply: "..ofp.ofp_multipart_type[tvb(0,2):uint()])
     pinfo.cols.info:append(": "..ofp.ofp_multipart_type[tvb(0,2):uint()])
+    local i_mult_type = tvb(0,2):uint()
     subtree:add(fields.multipart_type, tvb(0,2))
     subtree:add(fields.multipart_flags, tvb(2,2))
     subtree:add(fields.multipart_flags_reply_more, tvb(2,2))
     subtree:add(fields.pad4, tvb(4,4))
-    struct_multipart.ofp_flow_stats_reply(tvb(8), pinfo, subtree)
+    if (tvb():len() > 8) then
+        if (struct_multipart.parsers_ofpmp_reply[i_mult_type] ~= nil) then
+            struct_multipart.parsers_ofpmp_reply[i_mult_type](tvb(8), pinfo, subtree)
+        else
+            pinfo.cols.info:append(" not implemented")
+        end
+    end
 end
 M.parsers_ofpt[19] = parse_multipart_reply
 
