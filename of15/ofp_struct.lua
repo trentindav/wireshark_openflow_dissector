@@ -1,3 +1,6 @@
+-- Author: Davide Trentin (trentindav@gmail.com)
+-- Licensed under the Apache License, Version 2.0, see LICENSE for details
+
 local ofp = require "ofp_const"
 
 M = {}

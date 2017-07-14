@@ -1,4 +1,6 @@
--- local d = require "debug"
+-- Author: Davide Trentin (trentindav@gmail.com)
+-- Licensed under the Apache License, Version 2.0, see LICENSE for details
+
 local ofp = require "ofp_const"
 local ofp_struct = require "of15.ofp_struct"
 local struct_multipart = require "of15.ofp_struct_multipart"
