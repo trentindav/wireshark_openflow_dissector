@@ -30,9 +30,52 @@ function ofp_match(tvb, pinfo, tree)
 end
 M.ofp_match = ofp_match
 
+function oxm_value_port_no(tvb)
+    local str_in_port
+    if ofp.ofp_port_no[tvb():uint()] ~= nil then
+        str_in_port = ofp.ofp_port_no[tvb():uint()]
+    else
+        str_in_port = string.format("%d", tvb():uint())
+    end
+    return str_in_port
+end
+M.oxm_value_port_no = oxm_value_port_no
+function oxm_value_int(tvb)
+    return string.format("%d", tvb():uint())
+end
+M.oxm_value_int = oxm_value_int
+function oxm_value_eth(tvb)
+    return string.format("%02x:%02x:%02x:%02x:%02x:%02x", tvb(0,1):uint(), tvb(1,1):uint(), tvb(2,1):uint(), tvb(3,1):uint(), tvb(4,1):uint(), tvb(5,1):uint())
+end
+M.oxm_value_eth = oxm_value_eth
+function oxm_value_ipv4(tvb)
+    return string.format("%d.%d.%d.%d", tvb(0,1):uint(), tvb(1,1):uint(), tvb(2,1):uint(), tvb(3,1):uint())
+end
+M.oxm_value_ipv4 = oxm_value_ipv4
+function oxm_value_ipv6(tvb)
+    return string.format("%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x", 
+                         tvb(0,1):uint(), tvb(1,1):uint(), tvb(2,1):uint(), tvb(3,1):uint(), 
+                         tvb(4,1):uint(), tvb(5,1):uint(), tvb(6,1):uint(), tvb(7,1):uint(), 
+                         tvb(8,1):uint(), tvb(9,1):uint(), tvb(10,1):uint(), tvb(11,1):uint(), 
+                         tvb(12,1):uint(), tvb(13,1):uint(), tvb(14,1):uint(), tvb(15,1):uint()
+                         )
+end
+M.oxm_value_ipv6 = oxm_value_ipv6
+
+parsers_oxm_value = {
+    [ofp.OFPXMT_OFB_IN_PORT] = oxm_value_port_no,
+    [ofp.OFPXMT_OFB_ETH_DST] = oxm_value_eth, [ofp.OFPXMT_OFB_ETH_SRC] = oxm_value_eth,
+    [ofp.OFPXMT_OFB_ARP_SHA] = oxm_value_eth, [ofp.OFPXMT_OFB_ARP_THA] = oxm_value_eth,
+    [ofp.OFPXMT_OFB_IPV6_ND_SLL] = oxm_value_eth, [ofp.OFPXMT_OFB_IPV6_ND_TLL] = oxm_value_eth,
+    [ofp.OFPXMT_OFB_IPV4_DST] = oxm_value_ipv4, [ofp.OFPXMT_OFB_IPV4_SRC] = oxm_value_ipv4,
+    [ofp.OFPXMT_OFB_ARP_SPA] = oxm_value_ipv4, [ofp.OFPXMT_OFB_ARP_TPA] = oxm_value_ipv4,
+    [ofp.OFPXMT_OFB_IPV6_DST] = oxm_value_ipv6, [ofp.OFPXMT_OFB_IPV6_SRC] = oxm_value_ipv6,
+    [ofp.OFPXMT_OFB_IPV6_ND_TARGET] = oxm_value_ipv6
+}
+
 fields.oxm_field = ProtoField.new("OXM Field", "of.oxm_field", ftypes.STRING)
 fields.oxm_field_class = ProtoField.new("Class", "of.oxm_field.class", ftypes.UINT16, ofp.ofp_oxm_class, base.HEX)
-fields.oxm_field_field = ProtoField.new("Field", "of.oxm_field.type", ftypes.UINT16, ofp.oxm_ofb_match_fields, base.DEC, 0xfe)
+fields.oxm_field_field = ProtoField.new("Field", "of.oxm_field.field", ftypes.UINT16, ofp.oxm_ofb_match_fields, base.DEC, 0xfe)
 fields.oxm_field_hasmask = ProtoField.new("Hasmask", "of.oxm_field.hasmask", ftypes.BOOLEAN, nil, base.DEC, 0x01)
 fields.oxm_field_length = ProtoField.new("Length", "of.oxm_field.length", ftypes.UINT8, nil, base.DEC)
 fields.oxm_field_value = ProtoField.bytes("Value", "of.oxm_field.value")
@@ -40,8 +83,22 @@ fields.oxm_field_mask = ProtoField.bytes("Mask", "of.oxm_field.mask")
 function oxm_field(tvb, pinfo, tree)
     assert(tvb:len() >= 4, "OXM field: not enough bytes")
     local oxm_len = tvb(3,1):uint()
+    local str_value = ""
+    local str_mask = ""
+    local value_parser
+    if parsers_oxm_value[tvb(2,1):uint()/2] ~= nil then
+        value_parser = parsers_oxm_value[tvb(2,1):uint()/2]
+    else 
+        value_parser = oxm_value_int
+    end
+    if (bit32.band(tvb(2,1):uint(), 0x01) == 1) then
+        str_value = value_parser(tvb(4, oxm_len/2))
+        str_mask = value_parser(tvb(4+oxm_len/2, oxm_len/2))
+    else
+        str_value = value_parser(tvb(4, oxm_len))
+    end
     local subtree = tree:add(fields.oxm_field, tvb(0), "", 
-                             string.gsub(string.lower(ofp.oxm_ofb_match_fields[tvb(2,1):uint()/2]), "ofpxmt_ofb_", ""), "")
+                             string.gsub(string.lower(ofp.oxm_ofb_match_fields[tvb(2,1):uint()/2]), "ofpxmt_ofb_", "").." = "..str_value..str_mask, "")
     subtree:add(fields.oxm_field_class, tvb(0,2))
     subtree:add(fields.oxm_field_field, tvb(2,1))
     subtree:add(fields.oxm_field_hasmask, tvb(2,1))
@@ -50,7 +107,7 @@ function oxm_field(tvb, pinfo, tree)
         subtree:add(fields.oxm_field_value, tvb(4, oxm_len/2))
         subtree:add(fields.oxm_field_mask, tvb(4+oxm_len/2, oxm_len/2))
     else
-        subtree:add(fields.oxm_field_value, tvb(4, oxm_len))
+        subtree:add(fields.oxm_field_value, tvb(4, oxm_len), "", "Value: "..str_value)
     end
     return oxm_len + 4
 end
