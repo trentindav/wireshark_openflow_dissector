@@ -21,10 +21,10 @@ function ofp_match(tvb, pinfo, tree)
         offset = offset + oxm_field(tvb(offset), pinfo, subtree)
     end
     local pad_len = math.floor((unpadded_len+7)/8)*8 - unpadded_len
-    while (offset < unpadded_len+pad_len) do
+    -- while (offset < unpadded_len+pad_len) do
         -- subtree:add(fields.pad, tvb(offset,1))
-        offset = offset + 1
-    end
+    --     offset = offset + 1
+    -- end
     return unpadded_len+pad_len
 end
 M.ofp_match = ofp_match
@@ -237,7 +237,7 @@ end
 M.ofp_action_output = ofp_action_output
 action_parsers[ofp.OFPAT_OUTPUT] = ofp_action_output
 
-fields.ofp_action_group_id = ProtoField.new("Group Id:", "of.ofp_action.group_id", ftypes.UINT32, nil, base.DEC)
+fields.ofp_action_group_id = ProtoField.new("Group Id", "of.ofp_action.group_id", ftypes.UINT32, nil, base.DEC)
 function ofp_action_group(tvb, pinfo, tree)
     local group_id = tvb(4,4):uint()
     local subtree = tree:add(fields.ofp_action_header, tvb(0), "", "Group id="..tostring(group_id))
@@ -248,7 +248,7 @@ end
 M.ofp_action_group = ofp_action_group
 action_parsers[ofp.OFPAT_GROUP] = ofp_action_group
 
-fields.ofp_action_queue_id = ProtoField.new("Queue Id:", "of.ofp_action.queue_id", ftypes.UINT32, nil, base.DEC)
+fields.ofp_action_queue_id = ProtoField.new("Queue Id", "of.ofp_action.queue_id", ftypes.UINT32, nil, base.DEC)
 function ofp_action_set_queue(tvb, pinfo, tree)
     local queue_id = tvb(4,4):uint()
     local subtree = tree:add(fields.ofp_action_header, tvb(0), "", "Queue id="..tostring(queue_id))
@@ -259,7 +259,7 @@ end
 M.ofp_action_set_queue = ofp_action_set_queue
 action_parsers[ofp.OFPAT_SET_QUEUE] = ofp_action_set_queue
 
-fields.ofp_action_meter_id = ProtoField.new("Meter Id:", "of.ofp_action.meter_id", ftypes.UINT32, nil, base.DEC)
+fields.ofp_action_meter_id = ProtoField.new("Meter Id", "of.ofp_action.meter_id", ftypes.UINT32, nil, base.DEC)
 function ofp_action_meter(tvb, pinfo, tree)
     local meter_id = tvb(4,4):uint()
     local subtree = tree:add(fields.ofp_action_header, tvb(0), "", "Meter id="..tostring(meter_id))
@@ -270,7 +270,7 @@ end
 M.ofp_action_meter = ofp_action_meter
 action_parsers[ofp.OFPAT_METER] = ofp_action_meter
 
-fields.ofp_action_mpls_ttl = ProtoField.new("MPLS TTL:", "of.ofp_action.mpls_ttl", ftypes.UINT8, nil, base.DEC)
+fields.ofp_action_mpls_ttl = ProtoField.new("MPLS TTL", "of.ofp_action.mpls_ttl", ftypes.UINT8, nil, base.DEC)
 function ofp_action_mpls_ttl(tvb, pinfo, tree)
     local mpls_ttl = tvb(4,1):uint()
     local subtree = tree:add(fields.ofp_action_header, tvb(), "", "MPLS TTL="..tostring(mpls_ttl))
@@ -298,7 +298,7 @@ action_parsers[ofp.OFPAT_DEC_NW_TTL] = ofp_actioofp_action_genericn_mpls_ttl
 action_parsers[ofp.OFPAT_POP_VLAN] = ofp_actioofp_action_genericn_mpls_ttl
 action_parsers[ofp.OFPAT_POP_PBB] = ofp_actioofp_action_genericn_mpls_ttl
 
-fields.ofp_action_nw_ttl = ProtoField.new("Nw TTL:", "of.ofp_action.nw_ttl", ftypes.UINT8, nil, base.DEC)
+fields.ofp_action_nw_ttl = ProtoField.new("Nw TTL", "of.ofp_action.nw_ttl", ftypes.UINT8, nil, base.DEC)
 function ofp_action_nw_ttl(tvb, pinfo, tree)
     local nw_ttl = tvb(4,1):uint()
     local subtree = tree:add(fields.ofp_action_header, tvb(), "", "Nw TTL="..tostring(mpls_ttl))
@@ -309,6 +309,105 @@ function ofp_action_nw_ttl(tvb, pinfo, tree)
 end
 M.ofp_action_nw_ttl = ofp_action_nw_ttl
 action_parsers[ofp.OFPAT_SET_NW_TTL] = ofp_action_nw_ttl
+
+fields.ofp_action_ethertype = ProtoField.new("Ethertype", "of.ofp_action.ethertype", ftypes.UINT16, nil, base.DEC)
+function ofp_action_push(tvb, pinfo, tree)
+    local ethertype = tvb(4,2):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(), "",
+        string.format("%s ethertype=0x%x", string.gsub(string.lower(ofp.ofp_action_type[act_type_int]), "ofpat_", ""), ethertype))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_ethertype, ethertype)
+    subtree:add(fields.pad2, tvb(6,2))
+end
+M.ofp_action_push = ofp_action_push
+action_parsers[ofp.OFPAT_PUSH_VLAN] = ofp_action_push
+action_parsers[ofp.OFPAT_PUSH_MPLS] = ofp_action_push
+action_parsers[ofp.OFPAT_PUSH_PBB] = ofp_action_push
+
+function ofp_action_pop_mpls(tvb, pinfo, tree)
+    local ethertype = tvb(4,2):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(), "",
+        string.format("%s ethertype=0x%x", string.gsub(string.lower(ofp.ofp_action_type[act_type_int]), "ofpat_", ""), ethertype))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_ofp_action_ethertypenw_ttl, ethertype)
+    subtree:add(fields.pad2, tvb(6,2))
+end
+M.ofp_action_pop_mpls = ofp_action_pop_mpls
+action_parsers[ofp.OFPAT_POP_MPLS] = ofp_action_pop_mpls
+
+function ofp_action_set_field(tvb, pinfo, tree)
+    local int_field = tvb(6,1):uint() / 2
+    local oxm_len = tvb(7,1):uint()
+    local value_parser
+    local str_value = ""
+    local str_mask = ""
+    if ofp.oxm_ofb_match_fields[int_field]~=nil then
+        if parsers_oxm_value[int_field] ~= nil then
+            value_parser = parsers_oxm_value[int_field]
+        else 
+            value_parser = oxm_value_int
+        end
+        if (bit32.band(tvb(6,1):uint(), 0x01) == 1) then
+            str_value = value_parser(tvb(8, oxm_len/2))
+            str_mask = "/"..value_parser(tvb(8+oxm_len/2, oxm_len/2))
+        else
+            str_value = value_parser(tvb(8, oxm_len))
+        end
+        local subtree = tree:add(fields.ofp_action_header, tvb(), "", 
+            string.format("Set Field: %s=%s%s", ofp.oxm_ofb_match_fields[int_field], str_value, str_mask))
+    else
+        local subtree = tree:add(fields.ofp_action_header, tvb(), "", "Set Field")
+    end
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    oxm_field(tvb(4) pinfo, subtree)
+    -- Not required to loop through padding, unless we want to show them in the tree
+end
+M.ofp_action_set_field = ofp_action_set_field
+action_parsers[ofp.OFPAT_SET_FIELD] = ofp_action_set_field
+
+fields.ofp_action_n_bits = ProtoField.new("N bits", "of.ofp_action.n_bits", ftypes.UINT16, nil, base.DEC)
+fields.ofp_action_src_offset = ProtoField.new("Src Offset", "of.ofp_action.src_offset", ftypes.UINT16, nil, base.DEC)
+fields.ofp_action_dst_offset = ProtoField.new("Dst Offset", "of.ofp_action.dst_offset", ftypes.UINT16, nil, base.DEC)
+function ofp_action_copy_field(tvb, pinfo, tree)
+    local int_field_src = tvb(14,1):uint() / 2
+    local oxm_src_len = tvb(15,1):uint()
+    local int_field_dst = tvb(14+oxm_src_len,1):uint() / 2
+    local src_field = "unknown"
+    local dst_field = "unknown"
+    if ofp.oxm_ofb_match_fields[int_field_src]~=nil then
+        src_field = ofp.oxm_ofb_match_fields[int_field_src]
+    end
+    if ofp.oxm_ofb_match_fields[int_field_dst]~=nil then
+        dst_field = ofp.oxm_ofb_match_fields[int_field_dst]
+    end
+    local subtree = tree:add(fields.ofp_action_header, tvb(), "", 
+        string.format("Set Field: src=%s dst=%s", src_field, dst_field))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_n_bits, tvb(4,2))
+    subtree:add(fields.ofp_action_src_offset, tvb(6,2))
+    subtree:add(fields.ofp_action_dst_offset, tvb(8,2))
+    subtree:add(fields.pad2, tvb(10,2))
+    oxm_field(tvb(12) pinfo, subtree)
+    oxm_field(tvb(12+oxm_src_len) pinfo, subtree)
+    -- Not required to loop through padding, unless we want to show them in the tree
+end
+M.ofp_action_copy_field = ofp_action_copy_field
+action_parsers[ofp.OFPAT_COPY_FIELD] = ofp_action_copy_field
+
+fields.ofp_action_experimenter = ProtoField.new("Experimenter", "of.ofp_action.experimenter", ftypes.UINT32, nil, base.DEC)
+function ofp_action_experimenter(tvb, pinfo, tree)
+    local subtree = tree:add(fields.ofp_action_header, tvb(), "", "Experimenter")
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_experimenter, tvb(4,4))
+    -- TODO: Add Vendor specific experimenters
+end
+M.ofp_action_experimenter = ofp_action_experimenter
+action_parsers[ofp.OFPAT_EXPERIMENTER] = ofp_action_experimenter
 
 fields.ofp_action_header = ProtoField.new("Action", "of.ofp_action", ftypes.STRING)
 fields.ofp_action_header_type = ProtoField.new("Type", "of.ofp_action.type", ftypes.UINT16, ofp.ofp_action_type, base.DEC)
