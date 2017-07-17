@@ -210,7 +210,6 @@ action_parsers = {}
 fields.ofp_action_port = ProtoField.new("Port No", "of.ofp_action.port", ftypes.UINT32, nil, base.DEC)
 fields.ofp_action_max_len = ProtoField.new("Max Len", "of.ofp_action.max_len", ftypes.UINT16, nil, base.DEC)
 function ofp_action_output(tvb, pinfo, tree)
-    local int_type = tvb(0,2):uint()
     local int_port = tvb(4,4):uint()
     local str_port
     if ofp.ofp_port_no[int_port]~=nil then
@@ -222,16 +221,32 @@ function ofp_action_output(tvb, pinfo, tree)
     subtree:add(fields.ofp_action_header_type, tvb(0,2))
     subtree:add(fields.ofp_action_header_len, tvb(2,2))
     if ofp.ofp_port_no[int_port]~=nil then
-        subtree:add(fields.ofp_action_port, tvb(4,4), int_type, "Port No: "..ofp.ofp_port_no[int_port])
+        subtree:add(fields.ofp_action_port, tvb(4,4), int_port, "Port No: "..ofp.ofp_port_no[int_port])
     else
         subtree:add(fields.ofp_action_port, tvb(4,4))
     end
-    subtree:add(fields.ofp_action_max_len, tvb(8,2))
+    local int_max_len = tvb(8,2):uint()
+    if ofp.ofp_controller_max_len[int_max_len]~=nil then
+        subtree:add(fields.ofp_action_max_len, tvb(8,2), int_max_len, "Max Len: "..ofp.ofp_controller_max_len[int_max_len])
+    else
+        subtree:add(fields.ofp_action_max_len, tvb(8,2))
+    end
     -- subtree:add(fields.pad2, tvb(10,2))
     -- subtree:add(fields.pad4, tvb(12,4))
 end
 M.ofp_action_output = ofp_action_output
 action_parsers[ofp.OFPAT_OUTPUT] = ofp_action_output
+
+fields.ofp_action_group_id = ProtoField.new("Group Id:", "of.ofp_action.group_id", ftypes.UINT32, nil, base.DEC)
+function ofp_action_group(tvb, pinfo, tree)
+    local group_id = tvb(4,4):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(0, len), "", "Group id="..tostring(group_id))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_group_id, group_id)
+end
+M.ofp_action_group = ofp_action_group
+action_parsers[ofp.OFPAT_GROUP] = ofp_action_group
 
 fields.ofp_action_header = ProtoField.new("Action", "of.ofp_action", ftypes.STRING)
 fields.ofp_action_header_type = ProtoField.new("Type", "of.ofp_action.type", ftypes.UINT16, ofp.ofp_action_type, base.DEC)

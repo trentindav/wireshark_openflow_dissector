@@ -337,6 +337,13 @@ M.ofp_group_bucket = {
     [M.OFPG_BUCKET_ALL] = "OFPG_BUCKET_ALL",
 }
 
+M.OFPCML_MAX = 0xffe5
+M.OFPCML_NO_BUFFER = 0xffff
+M.ofp_controller_max_len = {
+    [M.OFPCML_MAX] = "OFPCML_MAX",
+    [M.OFPCML_NO_BUFFER] = "OFPCML_NO_BUFFER",
+}
+
 -- Tools
 function roundup(orig_len)
     return math.floor((orig_len+7)/8)*8
