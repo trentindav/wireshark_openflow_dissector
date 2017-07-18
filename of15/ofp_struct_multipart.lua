@@ -4,7 +4,7 @@
 local ofp = require "ofp_const"
 local ofp_struct = require "of15.ofp_struct"
 
-M = {}
+local M = {}
 
 fields = _G.of_proto.fields
 M.parsers_ofpmp_request = {}
@@ -233,5 +233,47 @@ function ofp_group_desc(tvb, pinfo, tree)
     return len
 end
 M.ofp_group_desc = ofp_group_desc
+
+-- Port Desc & Stats
+fields.ofp_port_desc_request = ProtoField.new("Port Desc Request", "of.port_desc_request", ftypes.STRING)
+fields.ofp_port_desc_port_no = ProtoField.new("Port No", "of.port_desc_request.port_no", ftypes.UINT32, nil, base.DEC)
+function ofp_port_desc_request(tvb, pinfo, tree)
+    local port_no = tvb(0,4):uint()
+    local str_port = tostring(port_no)
+    if ofp.ofp_port_no[port_no]~=nil then
+        str_port  = ofp.ofp_port_no[port_no]
+    end
+    local subtree = tree:add(fields.ofp_port_desc_request, tvb(0,8), "", "Port Desc Request")
+    subtree:add(fields.ofp_port_desc_port_no, tvb(0,4), port_no, "Port No: "..str_port)
+    subtree:add(fields.pad4, tvb(4,4))
+end
+M.ofp_port_desc_request = ofp_port_desc_request
+M.parsers_ofpmp_request[ofp.OFPMP_PORT_DESC] = ofp_port_desc_request
+
+fields.ofp_port_stats_request = ProtoField.new("Port Stats Request", "of.port_stats_request", ftypes.STRING)
+fields.ofp_port_stats_port_no = ProtoField.new("Port No", "of.port_stats_request.port_no", ftypes.UINT32, nil, base.DEC)
+function ofp_port_stats_request(tvb, pinfo, tree)
+    local port_no = tvb(0,4):uint()
+    local str_port = tostring(port_no)
+    if ofp.ofp_port_no[port_no]~=nil then
+        str_port  = ofp.ofp_port_no[port_no]
+    end
+    local subtree = tree:add(fields.ofp_port_stats_request, tvb(0,8), "", "Port Stats Request")
+    subtree:add(fields.ofp_port_stats_port_no, tvb(0,4), port_no, "Port No: "..str_port)
+    subtree:add(fields.pad4, tvb(4,4))
+end
+M.ofp_port_stats_request = ofp_port_stats_request
+M.parsers_ofpmp_request[ofp.OFPMP_PORT_STATS] = ofp_port_stats_request
+
+
+
+function ofp_port_desc_reply(tvb, pinfo, tree)
+    local offset = 0
+    while (offset < tvb():len()) do
+        offset = offset + ofp_struct.ofp_port(tvb(offset), pinfo, tree)
+    end
+end
+M.ofp_port_desc_reply = ofp_port_desc_reply
+M.parsers_ofpmp_reply[ofp.OFPMP_PORT_DESC] = ofp_port_desc_reply
 
 return M

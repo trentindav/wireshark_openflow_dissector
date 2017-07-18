@@ -1,8 +1,10 @@
 -- Author: Davide Trentin (trentindav@gmail.com)
 -- Licensed under the Apache License, Version 2.0, see LICENSE for details
 
-M = {}
+local M = {}
+fields = _G.of_proto.fields
 
+M.with_padding = false
 M["ofp_versions"] = {
     [4] = "OF1.3",
     [5] = "OF1.4",
@@ -349,5 +351,31 @@ function roundup(orig_len)
     return math.floor((orig_len+7)/8)*8
 end
 M.roundup = roundup
+
+function get_str_value(converter, int_value)
+    if converter[int_value]~=nil then
+        return converter[int_value]
+    else
+        return tostring(int_value)
+    end
+end
+M.get_str_value = get_str_value
+
+function add_padding(tree, tvb, offset, size)
+    local field
+    if size==1 then
+        field = fields.pad
+    elseif size==2 then
+        field = fields.pad2
+    elseif size==3 then
+        field = fields.pad3
+    elseif size==4 then
+        field = fields.pad4
+    end
+    if M.with_padding then
+        tree:add(field, tvb(offset,size))
+    end
+end
+M.add_padding = add_padding
 
 return M

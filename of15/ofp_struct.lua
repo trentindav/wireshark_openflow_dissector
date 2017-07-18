@@ -3,7 +3,7 @@
 
 local ofp = require "ofp_const"
 
-M = {}
+local M = {}
 
 fields = _G.of_proto.fields
 
@@ -361,7 +361,7 @@ function ofp_action_set_field(tvb, pinfo, tree)
     end
     subtree:add(fields.ofp_action_header_type, tvb(0,2))
     subtree:add(fields.ofp_action_header_len, tvb(2,2))
-    oxm_field(tvb(4) pinfo, subtree)
+    oxm_field(tvb(4), pinfo, subtree)
     -- Not required to loop through padding, unless we want to show them in the tree
 end
 M.ofp_action_set_field = ofp_action_set_field
@@ -390,8 +390,8 @@ function ofp_action_copy_field(tvb, pinfo, tree)
     subtree:add(fields.ofp_action_src_offset, tvb(6,2))
     subtree:add(fields.ofp_action_dst_offset, tvb(8,2))
     subtree:add(fields.pad2, tvb(10,2))
-    oxm_field(tvb(12) pinfo, subtree)
-    oxm_field(tvb(12+oxm_src_len) pinfo, subtree)
+    oxm_field(tvb(12), pinfo, subtree)
+    oxm_field(tvb(12+oxm_src_len), pinfo, subtree)
     -- Not required to loop through padding, unless we want to show them in the tree
 end
 M.ofp_action_copy_field = ofp_action_copy_field
@@ -541,7 +541,7 @@ M.instruction_list = instruction_list
 fields.ofp_port_header = ProtoField.new("Port", "of15.ofp_port", ftypes.STRING)
 fields.ofp_port_port_no = ProtoField.new("Port No", "of15.ofp_port.port_no", ftypes.UINT32, nil, base.DEC)
 fields.ofp_port_length = ProtoField.new("Length", "of15.ofp_port.length", ftypes.UINT16, nil, base.DEC)
-fields.ofp_port_hw_addr = ProtoField.byte("HW Address", "of15.ofp_port.hw_addr")
+fields.ofp_port_hw_addr = ProtoField.bytes("HwAddr", "of15.ofp_port.hw_addr")
 fields.ofp_port_name = ProtoField.new("Name", "of15.ofp_port.name", ftypes.STRING)
 fields.ofp_port_config = ProtoField.new("Config", "of15.ofp_port.config", ftypes.UINT32, nil, base.HEX, 0x00000065)
 fields.ofp_port_config_port_down = ProtoField.new("OFPPC_PORT_DOWN", "of15.ofp_port.config.port_down", ftypes.BOOLEAN, nil, 32, 0x00000001)
@@ -554,12 +554,13 @@ fields.ofp_port_state_blocked = ProtoField.new("OFPPS_BLOCKED", "of15.ofp_port.s
 fields.ofp_port_state_live = ProtoField.new("OFPPS_LIVE", "of15.ofp_port.state.live", ftypes.BOOLEAN, nil, 32, 0x00000004)
 function ofp_port(tvb, pinfo, tree)
     local len = tvb(4,2):uint()
-    local subtree = tree:add(fields.ofp_port_header, tvb(0,len))
-    subtree:add(fields.ofp_port_port_no, tvb(0,4))
+    local port_no = tvb(0,4):uint()
+    local subtree = tree:add(fields.ofp_port_header, tvb(0,len), "", "Port "..ofp.get_str_value(ofp.ofp_port_no, port_no))
+    subtree:add(fields.ofp_port_port_no, tvb(0,4), port_no, "Port: "..ofp.get_str_value(ofp.ofp_port_no, port_no))
     subtree:add(fields.ofp_port_length, tvb(4,2))
-    subtree:add(fields.pad2, tvb(6,2))
+    ofp.add_padding(subtree, tvb, 6, 2)
     subtree:add(fields.ofp_port_hw_addr, tvb(8,6),  "", "Hw Address: "..oxm_value_eth(tvb(8,6)))
-    subtree:add(fields.pad2, tvb(14,2))
+    ofp.add_padding(subtree, tvb, 14, 2)
     subtree:add(fields.ofp_port_name, tvb(16,16))
     local config_tree = subtree:add(fields.ofp_port_config, tvb(32,4))
     config_tree:add(fields.ofp_port_config_port_down, tvb(32,4))
@@ -571,9 +572,9 @@ function ofp_port(tvb, pinfo, tree)
     state_tree:add(fields.ofp_port_state_blocked, tvb(36,4))
     state_tree:add(fields.ofp_port_state_live, tvb(36,4))
     local offset = 40
-    while offset < len do
-        offset = offset + ofp_port_desc_prop_header(tvb(offset), pinfo, tree)  -- TODO: parse properties
-    end
+    -- while offset < len do
+    --     offset = offset + ofp_port_desc_prop_header(tvb(offset), pinfo, tree)  -- TODO: parse properties
+    -- end
     return len
 end
 M.ofp_port = ofp_port
