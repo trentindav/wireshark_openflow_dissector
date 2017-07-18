@@ -23,9 +23,9 @@ fields.flow_desc_cookie = ProtoField.new("Cookie", "of.flow_desc.cookie", ftypes
 function ofp_flow_desc(tvb, pinfo, tree)
     local subtree = tree:add(fields.flow_desc, tvb(), "", "Flow Desc")
     subtree:add(fields.length, tvb(0,2))
-    subtree:add(fields.pad2, tvb(2,2))
+    -- subtree:add(fields.pad2, tvb(2,2))
     subtree:add(fields.flow_desc_table_id, tvb(4,1))
-    subtree:add(fields.pad, tvb(5,1))
+    -- subtree:add(fields.pad, tvb(5,1))
     subtree:add(fields.flow_desc_priority, tvb(6,2))
     subtree:add(fields.flow_desc_idle_timeout, tvb(8,2))
     subtree:add(fields.flow_desc_hard_timeout, tvb(10,2))
@@ -35,6 +35,7 @@ function ofp_flow_desc(tvb, pinfo, tree)
     local match_len = ofp_struct.ofp_match(tvb(24, ofp.roundup(tvb(26,2):uint())), pinfo, subtree)
     local stats_len = ofp_struct.ofp_stats(tvb(24+match_len, tvb(26+match_len,2):uint()), pinfo, subtree)
     -- ofp_instruction
+    ofp_struct.instruction_list(tvb(24+match_len+stats_len), pinfo, subtree)
     return tvb(0, 2):uint()
 end
 M.ofp_flow_desc = ofp_flow_desc
@@ -46,7 +47,7 @@ fields.flow_stats_priority = ProtoField.new("Priority", "of.flow_stats.priority"
 function ofp_flow_stats(tvb, pinfo, tree)
     local subtree = tree:add(fields.flow_stats, tvb(), "", "Flow Stats")
     subtree:add(fields.length, tvb(0,2))
-    subtree:add(fields.pad2, tvb(2,2))
+    -- subtree:add(fields.pad2, tvb(2,2))
     subtree:add(fields.flow_stats_table_id, tvb(4,1))
     subtree:add(fields.flow_stats_reason, tvb(5,1))
     subtree:add(fields.flow_stats_priority, tvb(6,2))
@@ -74,7 +75,7 @@ fields.flow_desc_request_cookie_mask = ProtoField.new("Cookie Mask", "of.flow_de
 function ofp_flow_desc_request(tvb, pinfo, tree)
     local subtree = tree:add(fields.flow_stats_request, tvb(), "", "Flow Desc Request")
     subtree:add(fields.flow_desc_request_table_id, tvb(0,1))
-    subtree:add(fields.pad3, tvb(1,3))
+    -- subtree:add(fields.pad3, tvb(1,3))
     local out_port = tvb(4,4):uint()
     local out_group = tvb(8,4):uint()
     if (ofp.ofp_port_no[out_port] ~= nil) then
@@ -87,7 +88,7 @@ function ofp_flow_desc_request(tvb, pinfo, tree)
     else
         subtree:add(fields.flow_desc_request_out_group, tvb(8,4))
     end
-    subtree:add(fields.pad4, tvb(12,4))
+    -- subtree:add(fields.pad4, tvb(12,4))
     subtree:add(fields.flow_desc_request_cookie, tvb(16,8))
     subtree:add(fields.flow_desc_request_cookie_mask, tvb(24,8))
     ofp_struct.ofp_match(tvb(32), pinfo, subtree)
@@ -113,7 +114,7 @@ fields.flow_stats_request_cookie_mask = ProtoField.new("Cookie Mask", "of.flow_s
 function ofp_flow_stats_request(tvb, pinfo, tree)
     local subtree = tree:add(fields.flow_stats_request, tvb(), "", "Flow Stats Request")
     subtree:add(fields.flow_stats_table_id, tvb(0,1))
-    subtree:add(fields.pad3, tvb(1,3))
+    -- subtree:add(fields.pad3, tvb(1,3))
     local out_port = tvb(4,4):uint()
     local out_group = tvb(8,4):uint()
     if (ofp.ofp_port_no[out_port] ~= nil) then
@@ -126,7 +127,7 @@ function ofp_flow_stats_request(tvb, pinfo, tree)
     else
         subtree:add(fields.flow_stats_request_out_group, tvb(8,4))
     end
-    subtree:add(fields.pad4, tvb(12,4))
+    -- subtree:add(fields.pad4, tvb(12,4))
     subtree:add(fields.flow_stats_request_cookie, tvb(16,8))
     subtree:add(fields.flow_stats_request_cookie_mask, tvb(24,8))
     ofp_struct.ofp_match(tvb(32), pinfo, subtree)
@@ -154,7 +155,7 @@ fields.aggregate_flow_stats_request_cookie_mask = ProtoField.new("Cookie Mask", 
 function ofp_aggregate_flow_stats_request(tvb, pinfo, tree)
     local subtree = tree:add(fields.flow_stats_request, tvb(), "", "Aggregate Flow Stats Request")
     subtree:add(fields.aggregate_flow_stats_request_table_id, tvb(0,1))
-    subtree:add(fields.pad3, tvb(1,3))
+    -- subtree:add(fields.pad3, tvb(1,3))
     local out_port = tvb(4,4):uint()
     local out_group = tvb(8,4):uint()
     if (ofp.ofp_port_no[out_port] ~= nil) then
@@ -167,7 +168,7 @@ function ofp_aggregate_flow_stats_request(tvb, pinfo, tree)
     else
         subtree:add(fields.aggregate_flow_stats_request_out_group, tvb(8,4))
     end
-    subtree:add(fields.pad4, tvb(12,4))
+    -- subtree:add(fields.pad4, tvb(12,4))
     subtree:add(fields.aggregate_flow_stats_request_cookie, tvb(16,8))
     subtree:add(fields.aggregate_flow_stats_request_cookie_mask, tvb(24,8))
     ofp_struct.ofp_match(tvb(32), pinfo, subtree)

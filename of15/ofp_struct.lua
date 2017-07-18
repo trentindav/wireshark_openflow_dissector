@@ -21,12 +21,11 @@ function ofp_match(tvb, pinfo, tree)
         offset = offset + oxm_field(tvb(offset), pinfo, subtree)
     end
     local pad_len = math.floor((unpadded_len+7)/8)*8 - unpadded_len
-    while (offset < unpadded_len+pad_len) do
-        subtree:add(fields.pad, tvb(offset,1))
-        offset = offset + 1
-    end
+    -- while (offset < unpadded_len+pad_len) do
+        -- subtree:add(fields.pad, tvb(offset,1))
+    --     offset = offset + 1
+    -- end
     return unpadded_len+pad_len
-    -- return unpadded_len
 end
 M.ofp_match = ofp_match
 
@@ -129,7 +128,7 @@ function ofp_stats(tvb, pinfo, tree)
     end
     local pad_len = math.floor((unpadded_len+7)/8)*8 - unpadded_len
     while (offset < unpadded_len+pad_len) do
-        subtree:add(fields.pad, tvb(offset,1))
+        -- subtree:add(fields.pad, tvb(offset,1))
         offset = offset + 1
     end
     return unpadded_len + pad_len
@@ -206,27 +205,338 @@ function ofp_bucket(tvb, pinfo, tree)
 end
 M.ofp_bucket = ofp_bucket
 
-
-fields.ofp_action_header = ProtoField.new("Action", "of.ofp_action_header", ftypes.STRING)
-fields.ofp_action_header_type = ProtoField.new("Type", "of.ofp_bucket.type", ftypes.UINT16, ofp.ofp_action_tyoe, base.DEC)
-fields.ofp_action_header_len = ProtoField.new("Length", "of.ofp_bucket.len", ftypes.UINT16, nil, base.DEC)
-function ofp_action_header(tvb, pinfo, tree)
-    local len = tvb(2,2):uint()
-    local act_type_int = tvb(0,2):uint()
-    local subtree
-    if ofp.ofp_action_type[act_type_int] ~= nil then
-        subtree = tree:add(fields.ofp_action_header, tvb(0, len), "", 
-            string.gsub(string.lower(ofp.ofp_action_type[act_type_int]), "ofpat_", ""), "")
+-- Actions
+action_parsers = {}
+fields.ofp_action_port = ProtoField.new("Port No", "of.ofp_action.port", ftypes.UINT32, nil, base.DEC)
+fields.ofp_action_max_len = ProtoField.new("Max Len", "of.ofp_action.max_len", ftypes.UINT16, nil, base.DEC)
+function ofp_action_output(tvb, pinfo, tree)
+    local int_port = tvb(4,4):uint()
+    local str_port
+    if ofp.ofp_port_no[int_port]~=nil then
+        str_port = ofp.ofp_port_no[int_port]
     else
-        subtree = tree:add(fields.ofp_action_header, tvb(0, len), "", "Action")
+        str_port = int_port
+    end
+    local subtree = tree:add(fields.ofp_action_header, tvb(0), "", "Output port="..str_port)
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    if ofp.ofp_port_no[int_port]~=nil then
+        subtree:add(fields.ofp_action_port, tvb(4,4), int_port, "Port No: "..ofp.ofp_port_no[int_port])
+    else
+        subtree:add(fields.ofp_action_port, tvb(4,4))
+    end
+    local int_max_len = tvb(8,2):uint()
+    if ofp.ofp_controller_max_len[int_max_len]~=nil then
+        subtree:add(fields.ofp_action_max_len, tvb(8,2), int_max_len, "Max Len: "..ofp.ofp_controller_max_len[int_max_len])
+    else
+        subtree:add(fields.ofp_action_max_len, tvb(8,2))
+    end
+    -- subtree:add(fields.pad2, tvb(10,2))
+    -- subtree:add(fields.pad4, tvb(12,4))
+end
+M.ofp_action_output = ofp_action_output
+action_parsers[ofp.OFPAT_OUTPUT] = ofp_action_output
+
+fields.ofp_action_group_id = ProtoField.new("Group Id", "of.ofp_action.group_id", ftypes.UINT32, nil, base.DEC)
+function ofp_action_group(tvb, pinfo, tree)
+    local group_id = tvb(4,4):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(0), "", "Group id="..tostring(group_id))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_group_id, group_id)
+end
+M.ofp_action_group = ofp_action_group
+action_parsers[ofp.OFPAT_GROUP] = ofp_action_group
+
+fields.ofp_action_queue_id = ProtoField.new("Queue Id", "of.ofp_action.queue_id", ftypes.UINT32, nil, base.DEC)
+function ofp_action_set_queue(tvb, pinfo, tree)
+    local queue_id = tvb(4,4):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(0), "", "Queue id="..tostring(queue_id))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_queue_id, queue_id)
+end
+M.ofp_action_set_queue = ofp_action_set_queue
+action_parsers[ofp.OFPAT_SET_QUEUE] = ofp_action_set_queue
+
+fields.ofp_action_meter_id = ProtoField.new("Meter Id", "of.ofp_action.meter_id", ftypes.UINT32, nil, base.DEC)
+function ofp_action_meter(tvb, pinfo, tree)
+    local meter_id = tvb(4,4):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(0), "", "Meter id="..tostring(meter_id))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_meter_id, meter_id)
+end
+M.ofp_action_meter = ofp_action_meter
+action_parsers[ofp.OFPAT_METER] = ofp_action_meter
+
+fields.ofp_action_mpls_ttl = ProtoField.new("MPLS TTL", "of.ofp_action.mpls_ttl", ftypes.UINT8, nil, base.DEC)
+function ofp_action_mpls_ttl(tvb, pinfo, tree)
+    local mpls_ttl = tvb(4,1):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(), "", "MPLS TTL="..tostring(mpls_ttl))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_mpls_ttl, mpls_ttl)
+    subtree:add(fields.pad3, tvb(5,3))
+end
+M.ofp_action_mpls_ttl = ofp_action_mpls_ttl
+action_parsers[ofp.OFPAT_SET_MPLS_TTL] = ofp_action_mpls_ttl
+
+function ofp_action_generic(tvb, pinfo, tree)
+    local act_type_int = tvb(0,2):uint()
+    subtree = tree:add(fields.ofp_action_header, tvb(), "", 
+                       string.gsub(string.lower(ofp.ofp_action_type[act_type_int]), "ofpat_", ""), "")
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.pad4, tvb(5,4))
+end
+M.ofp_action_generic = ofp_action_generic
+action_parsers[ofp.OFPAT_DEC_MPLS_TTL] = ofp_actioofp_action_genericn_mpls_ttl
+action_parsers[ofp.OFPAT_COPY_TTL_OUT] = ofp_actioofp_action_genericn_mpls_ttl
+action_parsers[ofp.OFPAT_COPY_TTL_IN] = ofp_actioofp_action_genericn_mpls_ttl
+action_parsers[ofp.OFPAT_DEC_NW_TTL] = ofp_actioofp_action_genericn_mpls_ttl
+action_parsers[ofp.OFPAT_POP_VLAN] = ofp_actioofp_action_genericn_mpls_ttl
+action_parsers[ofp.OFPAT_POP_PBB] = ofp_actioofp_action_genericn_mpls_ttl
+
+fields.ofp_action_nw_ttl = ProtoField.new("Nw TTL", "of.ofp_action.nw_ttl", ftypes.UINT8, nil, base.DEC)
+function ofp_action_nw_ttl(tvb, pinfo, tree)
+    local nw_ttl = tvb(4,1):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(), "", "Nw TTL="..tostring(mpls_ttl))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_nw_ttl, nw_ttl)
+    subtree:add(fields.pad3, tvb(5,3))
+end
+M.ofp_action_nw_ttl = ofp_action_nw_ttl
+action_parsers[ofp.OFPAT_SET_NW_TTL] = ofp_action_nw_ttl
+
+fields.ofp_action_ethertype = ProtoField.new("Ethertype", "of.ofp_action.ethertype", ftypes.UINT16, nil, base.DEC)
+function ofp_action_push(tvb, pinfo, tree)
+    local ethertype = tvb(4,2):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(), "",
+        string.format("%s ethertype=0x%x", string.gsub(string.lower(ofp.ofp_action_type[act_type_int]), "ofpat_", ""), ethertype))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_ethertype, ethertype)
+    subtree:add(fields.pad2, tvb(6,2))
+end
+M.ofp_action_push = ofp_action_push
+action_parsers[ofp.OFPAT_PUSH_VLAN] = ofp_action_push
+action_parsers[ofp.OFPAT_PUSH_MPLS] = ofp_action_push
+action_parsers[ofp.OFPAT_PUSH_PBB] = ofp_action_push
+
+function ofp_action_pop_mpls(tvb, pinfo, tree)
+    local ethertype = tvb(4,2):uint()
+    local subtree = tree:add(fields.ofp_action_header, tvb(), "",
+        string.format("%s ethertype=0x%x", string.gsub(string.lower(ofp.ofp_action_type[act_type_int]), "ofpat_", ""), ethertype))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_ofp_action_ethertypenw_ttl, ethertype)
+    subtree:add(fields.pad2, tvb(6,2))
+end
+M.ofp_action_pop_mpls = ofp_action_pop_mpls
+action_parsers[ofp.OFPAT_POP_MPLS] = ofp_action_pop_mpls
+
+function ofp_action_set_field(tvb, pinfo, tree)
+    local int_field = tvb(6,1):uint() / 2
+    local oxm_len = tvb(7,1):uint()
+    local value_parser
+    local str_value = ""
+    local str_mask = ""
+    if ofp.oxm_ofb_match_fields[int_field]~=nil then
+        if parsers_oxm_value[int_field] ~= nil then
+            value_parser = parsers_oxm_value[int_field]
+        else 
+            value_parser = oxm_value_int
+        end
+        if (bit32.band(tvb(6,1):uint(), 0x01) == 1) then
+            str_value = value_parser(tvb(8, oxm_len/2))
+            str_mask = "/"..value_parser(tvb(8+oxm_len/2, oxm_len/2))
+        else
+            str_value = value_parser(tvb(8, oxm_len))
+        end
+        local subtree = tree:add(fields.ofp_action_header, tvb(), "", 
+            string.format("Set Field: %s=%s%s", ofp.oxm_ofb_match_fields[int_field], str_value, str_mask))
+    else
+        local subtree = tree:add(fields.ofp_action_header, tvb(), "", "Set Field")
     end
     subtree:add(fields.ofp_action_header_type, tvb(0,2))
     subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    oxm_field(tvb(4) pinfo, subtree)
+    -- Not required to loop through padding, unless we want to show them in the tree
+end
+M.ofp_action_set_field = ofp_action_set_field
+action_parsers[ofp.OFPAT_SET_FIELD] = ofp_action_set_field
+
+fields.ofp_action_n_bits = ProtoField.new("N bits", "of.ofp_action.n_bits", ftypes.UINT16, nil, base.DEC)
+fields.ofp_action_src_offset = ProtoField.new("Src Offset", "of.ofp_action.src_offset", ftypes.UINT16, nil, base.DEC)
+fields.ofp_action_dst_offset = ProtoField.new("Dst Offset", "of.ofp_action.dst_offset", ftypes.UINT16, nil, base.DEC)
+function ofp_action_copy_field(tvb, pinfo, tree)
+    local int_field_src = tvb(14,1):uint() / 2
+    local oxm_src_len = tvb(15,1):uint()
+    local int_field_dst = tvb(14+oxm_src_len,1):uint() / 2
+    local src_field = "unknown"
+    local dst_field = "unknown"
+    if ofp.oxm_ofb_match_fields[int_field_src]~=nil then
+        src_field = ofp.oxm_ofb_match_fields[int_field_src]
+    end
+    if ofp.oxm_ofb_match_fields[int_field_dst]~=nil then
+        dst_field = ofp.oxm_ofb_match_fields[int_field_dst]
+    end
+    local subtree = tree:add(fields.ofp_action_header, tvb(), "", 
+        string.format("Set Field: src=%s dst=%s", src_field, dst_field))
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_n_bits, tvb(4,2))
+    subtree:add(fields.ofp_action_src_offset, tvb(6,2))
+    subtree:add(fields.ofp_action_dst_offset, tvb(8,2))
+    subtree:add(fields.pad2, tvb(10,2))
+    oxm_field(tvb(12) pinfo, subtree)
+    oxm_field(tvb(12+oxm_src_len) pinfo, subtree)
+    -- Not required to loop through padding, unless we want to show them in the tree
+end
+M.ofp_action_copy_field = ofp_action_copy_field
+action_parsers[ofp.OFPAT_COPY_FIELD] = ofp_action_copy_field
+
+fields.ofp_action_experimenter = ProtoField.new("Experimenter", "of.ofp_action.experimenter", ftypes.UINT32, nil, base.DEC)
+function ofp_action_experimenter(tvb, pinfo, tree)
+    local subtree = tree:add(fields.ofp_action_header, tvb(), "", "Experimenter")
+    subtree:add(fields.ofp_action_header_type, tvb(0,2))
+    subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    subtree:add(fields.ofp_action_experimenter, tvb(4,4))
+    -- TODO: Add Vendor specific experimenters
+end
+M.ofp_action_experimenter = ofp_action_experimenter
+action_parsers[ofp.OFPAT_EXPERIMENTER] = ofp_action_experimenter
+
+fields.ofp_action_header = ProtoField.new("Action", "of.ofp_action", ftypes.STRING)
+fields.ofp_action_header_type = ProtoField.new("Type", "of.ofp_action.type", ftypes.UINT16, ofp.ofp_action_type, base.DEC)
+fields.ofp_action_header_len = ProtoField.new("Length", "of.ofp_action.len", ftypes.UINT16, nil, base.DEC)
+function ofp_action_header(tvb, pinfo, tree)
+    local len = tvb(2,2):uint()
+    local act_type_int = tvb(0,2):uint()
+    if action_parsers[act_type_int]~=nil then
+        action_parsers[act_type_int](tvb(0,len), pinfo, tree)
+    else
+        local subtree
+        if ofp.ofp_action_type[act_type_int] ~= nil then
+            subtree = tree:add(fields.ofp_action_header, tvb(0, len), "", 
+                string.gsub(string.lower(ofp.ofp_action_type[act_type_int]), "ofpat_", ""), "")
+        else
+            subtree = tree:add(fields.ofp_action_header, tvb(0, len), "", "Action")
+        end
+        subtree:add(fields.ofp_action_header_type, tvb(0,2))
+        subtree:add(fields.ofp_action_header_len, tvb(2,2))
+    end
     -- TODO: Values for different actions
     assert(len > 0, "Invalid action len=0")
     return len
 end
 M.ofp_action_header = ofp_action_header
+
+function action_list(tvb, pinfo, tree)
+    local offset = 0
+    while (offset < tvb():len()) do
+        local act_len = tvb(offset+2,2):uint()
+        offset = offset + ofp_action_header(tvb(offset, act_len), pinfo, tree)
+    end
+end
+M.action_list = action_list
+
+-- Instructions
+instruction_parsers = {}
+fields.ofp_instruction_table_id = ProtoField.new("Table Id", "of.ofp_instruction.table_id", ftypes.UINT8, nil, base.DEC)
+function ofp_instruction_goto_table(tvb, pinfo, tree)
+    tree:add(fields.ofp_instruction_header_type, tvb(0,2))
+    tree:add(fields.ofp_instruction_header_len, tvb(2,2))
+    tree:add(fields.ofp_instruction_table_id, tvb(4,1))
+    -- tree:add(fields.pad3, tvb(5,3))
+end
+M.ofp_instruction_goto_table = ofp_instruction_goto_table
+instruction_parsers[ofp.OFPIT_GOTO_TABLE] = ofp_instruction_goto_table
+
+fields.ofp_instruction_metadata = ProtoField.new("Metadata", "of.ofp_instruction.metadata", ftypes.UINT64, nil, base.DEC)
+fields.ofp_instruction_metadata_mask = ProtoField.new("Metadata Maks", "of.ofp_instruction.metadata_mask", ftypes.UINT64, nil, base.DEC)
+function ofp_instruction_write_metadata(tvb, pinfo, tree)
+    tree:add(fields.ofp_instruction_header_type, tvb(0,2))
+    tree:add(fields.ofp_instruction_header_len, tvb(2,2))
+    -- tree:add(fields.pad4, tvb(4,4))
+    tree:add(fields.ofp_instruction_metadata, tvb(8,8))
+    tree:add(fields.ofp_instruction_metadata_mask, tvb(16,8))
+end
+M.ofp_instruction_write_metadata = ofp_instruction_write_metadata
+instruction_parsers[ofp.OFPIT_WRITE_METADATA] = ofp_instruction_write_metadata
+
+function ofp_instruction_actions(tvb, pinfo, tree)
+    tree:add(fields.ofp_instruction_header_type, tvb(0,2))
+    tree:add(fields.ofp_instruction_header_len, tvb(2,2))
+    -- tree:add(fields.pad4, tvb(4,4))
+    offset = 8
+    while (offset < tvb():len()) do
+        offset = offset + ofp_action_header(tvb(offset), pinfo, tree)
+    end
+end
+M.ofp_instruction_actions = ofp_instruction_actions
+instruction_parsers[ofp.OFPIT_WRITE_ACTIONS] = ofp_instruction_actions
+instruction_parsers[ofp.OFPIT_APPLY_ACTIONS] = ofp_instruction_actions
+instruction_parsers[ofp.OFPIT_CLEAR_ACTIONS] = ofp_instruction_actions
+
+fields.ofp_instruction_flags = ProtoField.new("Flags", "of15.ofp_instruction.stat_trigger.flags", ftypes.UINT32, nil, base.HEX, 0x00000003)
+fields.ofp_instruction_flags_periodic = ProtoField.new("OFPSTF_PERIODIC", "of15.ofp_instruction.stat_trigger.flags.periodic", ftypes.BOOLEAN, nil, 32, 0x00000001)
+fields.ofp_instruction_flags_only_first = ProtoField.new("OFPSTF_ONLY_FIRST", "of15.ofp_instruction.stat_trigger.flags.only_first", ftypes.BOOLEAN, nil, 32, 0x00000002)
+function ofp_instruction_stat_trigger(tvb, pinfo, tree)
+    tree:add(fields.ofp_instruction_header_type, tvb(0,2))
+    tree:add(fields.ofp_instruction_header_len, tvb(2,2))
+    tree:add(fields.pad4, tvb(4,4))
+    local flags_tree = subtree:add(fields.ofp_instruction_flags_periodic, tvb(4,4))
+    flags_tree:add(fields.ofp_instruction_flags_only_first, tvb(4,4))
+    -- TODO: missing ofp_stats thresholds
+    assert(False, "ofp_stats thresholds not implemented")
+end
+M.ofp_instruction_stat_trigger = ofp_instruction_stat_trigger
+instruction_parsers[ofp.OFPIT_STAT_TRIGGER] = ofp_instruction_stat_trigger
+
+fields.ofp_instruction_experimenter_id = ProtoField.new("Experimenter Id", "of15.ofp_instruction.experimenter_id", ftypes.UINT32, nil, base.DEC)
+function ofp_instruction_experimenter(tvb, pinfo, tree)
+    tree:add(fields.ofp_instruction_header_type, tvb(0,2))
+    tree:add(fields.ofp_instruction_header_len, tvb(2,2))
+    tree:add(fields.ofp_instruction_stat_trigger, tvb(4,4))
+end
+M.ofp_instruction_experimenter = ofp_instruction_experimenter
+instruction_parsers[ofp.OFPIT_EXPERIMENTER] = ofp_instruction_experimenter
+
+fields.ofp_instruction_header = ProtoField.new("Instruction", "of.ofp_instruction", ftypes.STRING)
+fields.ofp_instruction_header_type = ProtoField.new("Type", "of.ofp_instruction.type", ftypes.UINT16, ofp.ofp_instruction_type, base.DEC)
+fields.ofp_instruction_header_len = ProtoField.new("Length", "of.ofp_instruction.len", ftypes.UINT16, nil, base.DEC)
+function ofp_instruction_header(tvb, pinfo, tree)
+    local len = tvb(2,2):uint()
+    local inst_type_int = tvb(0,2):uint()
+    local subtree
+    if ofp.ofp_instruction_type[inst_type_int] ~= nil then
+        subtree = tree:add(fields.ofp_instruction_header, tvb(0, len), "", 
+            string.gsub("Instruction: "..string.lower(ofp.ofp_instruction_type[inst_type_int]), "ofpit_", ""), "")
+    else
+        subtree = tree:add(fields.ofp_instruction_header, tvb(0, len), "", "Instruction")
+    end
+    if instruction_parsers[inst_type_int] ~= nil then
+        instruction_parsers[inst_type_int](tvb, pinfo, subtree)
+    else
+        subtree:add(fields.ofp_instruction_header_type, tvb(0,2))
+        subtree:add(fields.ofp_instruction_header_len, tvb(2,2))
+    end
+    assert(len > 0, "Invalid instruction len=0")
+    return len
+end
+M.ofp_instruction_header = ofp_instruction_header
+
+function instruction_list(tvb, pinfo, tree)
+    local offset = 0
+    while (offset < tvb():len()) do
+        local inst_len = tvb(offset+2,2):uint()
+        offset = offset + ofp_instruction_header(tvb(offset, inst_len), pinfo, tree)
+    end
+end
+M.instruction_list = instruction_list
 
 
 
