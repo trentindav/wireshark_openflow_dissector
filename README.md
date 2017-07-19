@@ -16,5 +16,5 @@ I'll be implementing next on a per-need basis.
    `openflow_lua.lua` is located. For Lua>=5.2 this environment variable would
    look something like this:
 ```
-export LUA_PATH_5_2=/home/myname/wireshark_openflow_dissector/
+export LUA_PATH_5_2=/home/myname/wireshark_openflow_dissector/?.lua
 ```

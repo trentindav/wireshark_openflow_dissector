@@ -10,7 +10,7 @@ _G.of_proto = of_proto
 
 -- OF versions
 local ofp = require "ofp_const"
-ofp.with_padding = false
+ofp.with_padding = true
 local of15 = require "of15.ofp_message"
 
 local parsers_version = {
@@ -39,10 +39,12 @@ of.length = ProtoField.new("Length", "of.length", ftypes.UINT16, nil, base.DEC)
 function of_proto.dissector(tvb, pinfo, tree)
     -- TODO: Missing support for TCP fragmentation and the presence of multiple OF messages in the same TCP packet
     local i_version = tvb(0,1):uint()
+    local i_len = tvb(2,2):uint()
+    assert(i_len<=tvb():len(), "Length longer then message buffer (reassembly not supported)")
     if (i_version < 6) then
         builtin_of_dissector:call(tvb, pinfo, tree)
     else
-        local subtree = tree:add(of_proto, tvb(), "OpenFlow")
+        local subtree = tree:add(of_proto, tvb(0,i_len), "OpenFlow")
         local header = subtree:add(of.header, tvb(), "", "OF Header")
 
         -- Parse Header
